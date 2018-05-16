@@ -25,7 +25,7 @@ Use `make` command. And output will be main.o
 
 __better use `rm -rf /tmp/myfifo` before running__
 
-Use `./main.o {name}`, you should enter programm name (example: `/.main.o A`)
+Use `./main.o {name}`, you should enter programm name (example: `./main.o A`)
 
 ## How to see what's happening
 
