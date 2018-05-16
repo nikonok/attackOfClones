@@ -5,11 +5,11 @@
 
 Runs two copies of the program, we call them A and B.
 
-A passes B its PID and starts the child process a* with the fork () function.
+A passes B its PID and starts the child process A* with the fork () function.
       
-B kills the main process A, and process a* becomes the main (replaces A).        
+B kills the main process A, and process A* becomes the main (replaces A).        
        
-Then the opposite is true: B passes A (i.e. the former A*) his PID and creates his copy Of b* through fork (), and then a kills the main process B.
+Then the opposite is true: B passes A (i.e. the former A*) his PID and creates his copy of B* through fork (), and then a kills the main process B.
         
 And so on to infinity
 
