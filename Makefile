@@ -10,4 +10,4 @@ default: build
 build: $(OBJECTS)
 
 clean:
-	rm -rf log* $(TARGET)
+	rm -rf log* $(OBJECTS) /tmp/myfifo
