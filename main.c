@@ -41,42 +41,37 @@ int checkActive(char *name_of_file) {
     return 1;
 }
 
+void writeToPipe(int fd, int log_file){
+    //writing to pipe
+    char str_pid[BUFF_SIZE];
+    writeToLog("Start writing", log_file);
+    sprintf(str_pid, "%d", getpid());
+    ssize_t byte_write = write(fd, str_pid, strlen(str_pid));
+    char tempstr[BUFF_SIZE];
+    sprintf(tempstr, "Write pid = %d", getpid());
+    writeToLog(tempstr, log_file);
+}
 
-void workWithPipe(int fd, int log_file, int write_or_read) {
+void readFromPipe(int fd, int log_file){
     int kill_pid;
     char buf[BUFF_SIZE];
-    char str_pid[BUFF_SIZE];
-
-    static int first_time = 0;
-
-    if (write_or_read == 0) {
-        //first of all we need write to pipe
-        writeToLog("Start writing", log_file);
-        sprintf(str_pid, "%d", getpid());
-        ssize_t byte_write = write(fd, str_pid, strlen(str_pid));
-        char tempstr[BUFF_SIZE];
-        sprintf(tempstr, "Write pid = %d", getpid());
-        writeToLog(tempstr, log_file);
-    } else {
-        //second: we read a pid of process to kill
-        writeToLog("Start reading", log_file);
-        ssize_t byte_read = read(fd, buf, BUFF_SIZE);
-        switch (byte_read) {
-            case -1:
-                if (errno == EAGAIN) {
-                    writeError("Empty pipe! Write before reading", log_file);
-                    break;
-                } else {
-                    writeError("Reading pipe error.", log_file);
-                    exit(-3);
-                }
-            default:
-                kill_pid = atoi(buf);
-                killByPid(kill_pid, log_file);
-        }
-        //after reading we must write, but after writing we couldn't read
-        workWithPipe(fd, log_file, 0);
+    writeToLog("Start reading", log_file);
+    ssize_t byte_read = read(fd, buf, BUFF_SIZE);
+    switch (byte_read) {
+        case -1:
+            if (errno == EAGAIN) {
+                writeError("Empty pipe! Write before reading", log_file);
+                break;
+            } else {
+                writeError("Reading pipe error.", log_file);
+                exit(-3);
+            }
+        default:
+            kill_pid = atoi(buf);
+            killByPid(kill_pid, log_file);
     }
+    //after reading we must write, but after writing we couldn't read
+    writeToPipe(fd, log_file);
 }
 
 int main(int argc, char *argv[]) {
@@ -88,7 +83,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     if (strcmp(argv[1], "clear") == 0){
-        system("rm -rf /tmp/myfifo log.txt*");
+        system("rm -rf /tmp/myfifo log*");
         return 0;
     }
     name_prog = argv[1];
@@ -118,27 +113,8 @@ int main(int argc, char *argv[]) {
     }
 
     int ppid;
-    if(flag_write == 0){
-        //for the first process only
-        ppid = getpid();
-        switch (fork()) {
-            case -1:
-                exit(-4);
-            case 0:
-                //Child will wait for ending of parent
-                memset(tempstr, 0, strlen(tempstr));
-                sprintf(tempstr, "Child pid = %d", getpid());
-                writeToLog(tempstr, log_file);
-                while (kill(ppid, 0) == 0);
-                writeToLog("Start new circle!", log_file);
-                break;
-            default:
-                workWithPipe(fd, log_file, flag_write);
-                while (1);
-        }
-    }
     while (1) {
-        flag_write = 1;
+
         ppid = getpid();
         switch (fork()) {
             case -1:
@@ -152,11 +128,14 @@ int main(int argc, char *argv[]) {
                 writeToLog("Start new circle!", log_file);
                 break;
             default:
-                workWithPipe(fd, log_file, flag_write);
+                if(flag_write == 1)
+                    readFromPipe(fd, log_file);
+                else
+                    //for the first process only!
+                    writeToPipe(fd, log_file);
                 while (1);
         }
-
+        flag_write = 1;
     }
-
     return 0;
 }
